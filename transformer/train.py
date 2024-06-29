@@ -29,7 +29,7 @@ def greedy_decode(model, source, source_mask, token_src, token_tgt, max_len, dev
         decoder_mask = causal_mask(decoder_input.size(1)).type_as(source).to(device)
         decoder_output = model.decode(encoder_output, source_mask, decoder_input, decoder_mask)
         
-        prob = model.project(decoder_output[:, -1])
+        prob = model.linear_layer(decoder_output[:, -1])
 
         _, next_token = torch.max(prob, dim=-1)
         decoder_input = torch.cat([decoder_input, torch.empty(1, 1).type_as(source).fill_(next_token.item()).to(device)], dim=-1)
