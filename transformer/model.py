@@ -4,7 +4,7 @@ import torch.nn as nn
 import numpy as np
 
 class InputEmbeddings(nn.Module):
-    def __init__(self, d_model, vocab_size):
+    def __init__(self, d_model: int, vocab_size: int):
         super().__init__()
         self.d_model = d_model # 512
         self.vocab_size = vocab_size # size of the vocabulary
@@ -107,7 +107,7 @@ class MultiHeadAttention(nn.Module):
         key = key.view(key.shape[0], key.shape[1], self.h, self.d_k).transpose(1, 2)
         value = value.view(value.shape[0], value.shape[1], self.h, self.d_k).transpose(1, 2)
 
-        x, attention_score = MultiHeadAttention.attention(query, key, value, self.dropout)
+        x, self.attention_score = MultiHeadAttention.attention(query, key, value, mask, self.dropout)
 
         # Joining back all the heads together
         # (batch_size, h, seq_len, d_k) -> (batch_size, seq_len, h, d_k) -> (batch_size, seq_len, d_model)
@@ -129,6 +129,7 @@ class ResidualConnection(nn.Module):
 class EncoderBlock(nn.Module):
     # This is a single encoder block out of the N encoder blocks
     def __init__(self, features: int, self_attention: MultiHeadAttention, feed_forward: FFN, dropout: float):
+        super().__init__()
         self.self_attention = self_attention
         self.feed_forward = feed_forward
         self.residual_connections = nn.ModuleList([ResidualConnection(features, dropout) for _ in range(2)])
@@ -185,6 +186,7 @@ class LinearLayer(nn.Module):
 
 class Transformer(nn.Module):
     def __init__(self, encoder: Encoder, decoder: Decoder, src_embd: InputEmbeddings, target_embd: InputEmbeddings, src_pos: PositionalEmbeddings, target_pos: PositionalEmbeddings, linear: LinearLayer):
+        super().__init__()
         self.encoder = encoder
         self.decoder = decoder
         self.src_embd = src_embd
@@ -195,12 +197,14 @@ class Transformer(nn.Module):
     
     def encode(self, src, src_mask):
         # (batch, seq_len, d_model)
-        src = self.src_embd(src) + self.src_pos(src)
+        src = self.src_embd(src)
+        src = self.src_pos(src)
         return self.encoder(src, src_mask)
     
     def decode(self, encoder_out, src_mask, target, target_mask):
         # (batch, seq_len, d_model)
-        target = self.target_embd(target) + self.target_pos(target)
+        target = self.target_embd(target)
+        target = self.target_pos(target)
         return self.decoder(target, encoder_out, src_mask, target_mask)
     
     def linear_layer(self, x):
